@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: springai-bootcamp-demo
+  datasource:
+    url: jdbc:sqlite:${SQLITE_DB_PATH:chatbot.db}
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+
+#TODO: Add OpenRouter config
