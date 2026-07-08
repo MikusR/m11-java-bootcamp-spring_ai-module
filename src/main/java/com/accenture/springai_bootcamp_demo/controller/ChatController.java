@@ -32,7 +32,7 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<ChatDto> create(@Valid @RequestBody(required = false) CreateChatRequest request) {
-        ChatDto chat = chatService.createChat(request == null ? new CreateChatRequest(null) : request);
+        ChatDto chat = chatService.createChat(request == null ? new CreateChatRequest(null, null) : request);
         return ResponseEntity.created(URI.create("/api/chats/" + chat.id())).body(chat);
     }
 

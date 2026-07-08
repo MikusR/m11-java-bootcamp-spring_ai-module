@@ -37,8 +37,23 @@
             font-size: 18px;
             border-bottom: 1px solid #0b1120;
         }
+        #new-chat-provider {
+            margin: 12px 12px 0 12px;
+            padding: 10px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: var(--panel-2);
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #new-chat-provider:focus {
+            border-color: var(--accent);
+        }
         #new-chat {
-            margin: 12px;
+            margin: 8px 12px 12px 12px;
             padding: 10px;
             border: none;
             border-radius: 8px;
@@ -68,6 +83,21 @@
             flex: 1;
         }
         .chat-item .count { color: var(--muted); font-size: 12px; }
+        .list-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            color: white;
+            white-space: nowrap;
+        }
+        .list-badge.ollama {
+            background: #4f46e5;
+        }
+        .list-badge.openrouter {
+            background: #059669;
+        }
         .chat-item .del {
             border: none;
             background: transparent;
@@ -121,12 +151,38 @@
             cursor: pointer;
         }
         #send:disabled { opacity: 0.5; cursor: default; }
+        #provider-badge {
+            display: none;
+            align-items: center;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            white-space: nowrap;
+        }
+        #provider-badge.ollama {
+            display: inline-flex;
+            background: #4f46e5;
+            box-shadow: 0 0 12px rgba(79, 70, 229, 0.3);
+        }
+        #provider-badge.openrouter {
+            display: inline-flex;
+            background: #059669;
+            box-shadow: 0 0 12px rgba(5, 150, 105, 0.3);
+        }
         #error { color: #f87171; padding: 0 20px 10px; min-height: 18px; font-size: 13px; }
     </style>
 </head>
 <body>
 <aside>
     <header>💬 Chats</header>
+    <select id="new-chat-provider">
+        <option value="ollama">Ollama (Local)</option>
+        <option value="openrouter">OpenRouter (Remote)</option>
+    </select>
     <button id="new-chat">+ New chat</button>
     <div id="chat-list"></div>
 </aside>
@@ -135,6 +191,7 @@
     <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
     <div id="error"></div>
     <form id="composer">
+        <span id="provider-badge"></span>
         <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
         <button id="send" type="submit" disabled>Send</button>
     </form>

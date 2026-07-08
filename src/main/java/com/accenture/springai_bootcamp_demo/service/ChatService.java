@@ -1,6 +1,7 @@
 package com.accenture.springai_bootcamp_demo.service;
 
 import com.accenture.springai_bootcamp_demo.client.OllamaClient;
+import com.accenture.springai_bootcamp_demo.client.OpenRouterClient;
 import com.accenture.springai_bootcamp_demo.dto.ChatDto;
 import com.accenture.springai_bootcamp_demo.dto.ChatSummaryDto;
 import com.accenture.springai_bootcamp_demo.dto.CreateChatRequest;
@@ -28,11 +29,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChatService {
     private final ChatRepository chatRepository;
     private final OllamaClient ollamaClient;
+    private final OpenRouterClient openRouterClient;
     private final ChatMapper chatMapper;
 
     @Transactional
     public ChatDto createChat(CreateChatRequest request) {
-        Chat chat = Chat.create(ChatTitles.resolveInitial(request.title()));
+        Chat chat = Chat.create(ChatTitles.resolveInitial(request.title()), request.provider());
         chatRepository.save(chat);
         log.info("Created chat {}", chat.getId());
         return chatMapper.toDto(chat);
@@ -58,15 +60,20 @@ public class ChatService {
     }
 
     /**
-     * Persists the user message, asks the model for a reply, stores it and
-     * returns the refreshed conversation.
+     * Persists the user message, asks the local model for a reply, stores it
+     * and returns the refreshed conversation.
      */
     @Transactional
     public ChatDto sendMessage(String chatId, SendMessageRequest request) {
         Chat chat = loadChat(chatId);
 
         recordUserMessage(chat, request.content());
-        String reply = ollamaClient.complete(chat.getChatMessages());
+        String reply;
+        if ("openrouter".equalsIgnoreCase(chat.getProvider())) {
+            reply = openRouterClient.complete(chat.getChatMessages());
+        } else {
+            reply = ollamaClient.complete(chat.getChatMessages());
+        }
         recordAssistantMessage(chat, reply);
 
         chatRepository.save(chat);
