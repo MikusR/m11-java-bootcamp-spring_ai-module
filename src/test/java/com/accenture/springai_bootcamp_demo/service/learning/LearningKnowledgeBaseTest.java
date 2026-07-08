@@ -21,6 +21,7 @@ class LearningKnowledgeBaseTest {
                         "exceptions",
                         "streams",
                         "concurrency",
+                        "spring-crm",
                         "spring-boot",
                         "spring-ai",
                         "persistence",
@@ -62,5 +63,15 @@ class LearningKnowledgeBaseTest {
                 .extracting(LearningKnowledgeBase.RetrievedLearningContext::topicId)
                 .contains("java-core", "collections", "exceptions");
         assertThat(context.getFirst().guidance()).contains("Java Core");
+    }
+
+    @Test
+    void retrieveFindsSpringCrmGuidance() {
+        List<LearningKnowledgeBase.RetrievedLearningContext> context = knowledgeBase.retrieve(
+                List.of("spring-crm", "spring-boot", "java-core"),
+                "build a Spring CRM with controllers services and DTOs");
+
+        assertThat(context.getFirst().topicId()).isEqualTo("spring-crm");
+        assertThat(context.getFirst().guidance()).contains("CustomerController", "CreateCustomerRequest");
     }
 }

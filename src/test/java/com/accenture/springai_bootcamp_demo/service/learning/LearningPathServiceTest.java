@@ -18,7 +18,7 @@ class LearningPathServiceTest {
     void listTopicsMapsSeededTopics() {
         assertThat(service.listTopics())
                 .extracting("id")
-                .contains("java-core", "oop", "spring-boot", "spring-ai", "testing");
+                .contains("java-core", "oop", "spring-crm", "spring-boot", "spring-ai", "testing");
         assertThat(service.listTopics())
                 .extracting("article")
                 .allSatisfy(article -> assertThat((String) article).isNotBlank());
@@ -45,6 +45,53 @@ class LearningPathServiceTest {
         assertThat(response.agentTrace())
                 .extracting("agent")
                 .containsExactly("DIAGNOSTICIAN", "EXERCISE_DESIGNER", "COACH");
+    }
+
+    @Test
+    void diagnoseReplacesGenericModelOutputAndPlaceholderExercises() {
+        LearningPathService crmService = new LearningPathService(knowledgeBase, new GenericLearningAgentClient());
+        LearningDiagnosisRequest request = new LearningDiagnosisRequest(
+                "I want to build a Spring CRM.",
+                "I understand controllers but get confused about services, DTOs.",
+                List.of("spring-boot", "java-core", "validation"),
+                45);
+
+        LearningDiagnosisResponse response = crmService.diagnose(request);
+
+        assertThat(response.diagnosis().summary()).contains("Spring CRM");
+        assertThat(response.diagnosis().weakSpots())
+                .contains(
+                        "Connecting controller endpoints to focused service methods without putting business logic in the controller",
+                        "Designing request and response DTOs that keep the API separate from internal entities");
+        assertThat(response.diagnosis().weakSpots())
+                .noneMatch(weakSpot -> weakSpot.toLowerCase().contains("logging"));
+        assertThat(response.practicePlan().steps())
+                .extracting("title")
+                .containsExactly("Sketch the CRM API flow", "Design DTOs for one request", "Move behavior into the service");
+        assertThat(response.practicePlan().steps())
+                .extracting("instructions")
+                .noneMatch(instructions -> ((String) instructions).contains("no concrete instructions"));
+    }
+
+    @Test
+    void diagnoseReplacesSmallModelAcknowledgementResponse() {
+        LearningPathService crmService = new LearningPathService(knowledgeBase, new AcknowledgementLearningAgentClient());
+        LearningDiagnosisRequest request = new LearningDiagnosisRequest(
+                "I want to build a Spring CRM.",
+                "I understand controllers but get confused about services, DTOs.",
+                List.of("spring-crm", "spring-boot", "java-core"),
+                45);
+
+        LearningDiagnosisResponse response = crmService.diagnose(request);
+
+        assertThat(response.diagnosis().summary()).isEqualTo(
+                "Focus on translating the Spring CRM idea into controller endpoints, service use cases, and DTO-based API contracts.");
+        assertThat(response.diagnosis().weakSpots())
+                .contains("Breaking the CRM feature into small use cases such as create customer, update customer, and list interactions");
+        assertThat(response.practicePlan().steps())
+                .extracting("title")
+                .containsExactly("Sketch the CRM API flow", "Design DTOs for one request", "Move behavior into the service");
+        assertThat(response.coachMessage()).contains("controller, DTO, service, and repository");
     }
 
     private static class FakeLearningAgentClient implements LearningAgentClient {
@@ -84,6 +131,67 @@ class LearningPathServiceTest {
         public String runCoach(String diagnosis, String practicePlan) {
             calls.add("coach");
             return "Trace one request, then test the workflow with a fake model client.";
+        }
+    }
+
+    private static class GenericLearningAgentClient implements LearningAgentClient {
+
+        @Override
+        public String runDiagnostician(
+                String learnerGoal,
+                String struggles,
+                List<LearningKnowledgeBase.RetrievedLearningContext> context
+        ) {
+            return """
+                    SUMMARY: A Spring MVC application needs to handle asynchronous operations, manage request/response lifecycle, and ensure data consistency.
+                    WEAK_SPOTS:
+                    - Lack of proper API design and error handling.
+                    - Inadequate logging and monitoring.
+                    CONFIDENCE: 100
+                    """;
+        }
+
+        @Override
+        public String runExerciseDesigner(
+                String diagnosis,
+                List<LearningKnowledgeBase.RetrievedLearningContext> context,
+                int timeAvailableMinutes
+        ) {
+            return """
+                    - title | 10 | concrete instructions
+                    - duration | 15 | no concrete instructions
+                    """;
+        }
+
+        @Override
+        public String runCoach(String diagnosis, String practicePlan) {
+            return "Use the generated practice plan.";
+        }
+    }
+
+    private static class AcknowledgementLearningAgentClient implements LearningAgentClient {
+
+        @Override
+        public String runDiagnostician(
+                String learnerGoal,
+                String struggles,
+                List<LearningKnowledgeBase.RetrievedLearningContext> context
+        ) {
+            return "Okay, I understand. I will analyze your learner input and retrieved module guidance based on the criteria outlined above. Let's begin!";
+        }
+
+        @Override
+        public String runExerciseDesigner(
+                String diagnosis,
+                List<LearningKnowledgeBase.RetrievedLearningContext> context,
+                int timeAvailableMinutes
+        ) {
+            return "- title | 10 | concrete instructions";
+        }
+
+        @Override
+        public String runCoach(String diagnosis, String practicePlan) {
+            return "Okay, let's start! I understand the diagnostic process.";
         }
     }
 }

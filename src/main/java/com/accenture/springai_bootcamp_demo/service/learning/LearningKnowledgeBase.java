@@ -87,6 +87,22 @@ public class LearningKnowledgeBase {
                             Practice by scanning a service for fields. Ask whether each field is configuration, a dependency, or mutable request state. Mutable request state should not live there.
                             """),
             new LearningTopic(
+                    "spring-crm",
+                    "Spring CRM Application",
+                    "Customer management endpoints, DTO contracts, service use cases, validation, and persistence flow.",
+                    List.of("spring", "crm", "customer", "contact", "controller", "service", "dto", "validation", "repository"),
+                    """
+                            A Spring CRM application is a good layered architecture exercise because it has clear business nouns and workflows. Start with one vertical slice: create a customer, view a customer, update customer details, and list customers. For each use case, define the HTTP endpoint, the request DTO, the response DTO, the service method, and the repository operation.
+
+                            Controllers should stay thin. A CustomerController should validate request DTOs, call a CustomerService method, and return a response DTO. It should not decide business rules such as whether an email is unique, how a customer status changes, or how entities are assembled. Those decisions belong in the service layer.
+
+                            DTOs protect the API contract. A CreateCustomerRequest can include fields such as name, email, phone, and company. A CustomerResponse can include id, display name, status, and timestamps. Keep DTOs separate from JPA entities so database changes do not automatically become API changes. Add validation annotations such as NotBlank, Email, Size, and custom constraints where the request boundary needs them.
+
+                            Services should read like use cases. A createCustomer method validates business rules, builds the entity, saves it through the repository, and maps the result to a response DTO. A listCustomers method can handle filtering or sorting. A service test should be able to fake the repository and verify the business behavior without starting the whole web application.
+
+                            Practice by implementing one CRM use case end to end. Write the DTOs first, then the controller method, then the service method, then the repository call. After that, add one validation failure test and one successful service test.
+                            """),
+            new LearningTopic(
                     "spring-boot",
                     "Spring Boot",
                     "Controllers, services, dependency injection, configuration, and application structure.",

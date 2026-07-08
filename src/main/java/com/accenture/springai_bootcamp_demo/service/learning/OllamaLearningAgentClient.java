@@ -53,6 +53,11 @@ public class OllamaLearningAgentClient implements LearningAgentClient {
                         - weak spot two
                         CONFIDENCE: integer from 0 to 100
 
+                        Rules:
+                        - Mention the learner's actual terms when relevant, such as controllers, services, DTOs, CRM, Spring.
+                        - Do not mention async, logging, monitoring, data consistency, or testing unless the learner input or retrieved guidance explicitly asks for it.
+                        - Keep confidence below 90 unless the learner provided detailed evidence.
+
                         Learner goal:
                         %s
 
@@ -75,7 +80,12 @@ public class OllamaLearningAgentClient implements LearningAgentClient {
                         + SOURCE_BOUNDARY,
                 """
                         Return only practice steps in this exact format, one per line:
-                        - title | durationMinutes | concrete instructions
+                        - specific exercise title | number only | concrete instructions
+
+                        Rules:
+                        - Do not output the words "title", "duration", or "concrete instructions" as placeholder values.
+                        - Each instruction must mention a concrete Spring, controller, service, DTO, validation, test, or repository action.
+                        - Produce 3 to 4 steps total.
 
                         Available time: %d minutes
 

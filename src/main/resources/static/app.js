@@ -203,7 +203,7 @@ async function loadLearningTopics() {
 }
 
 function defaultTopicIds() {
-    return new Set(['java-core', 'oop', 'spring-boot', 'spring-ai', 'testing']);
+    return new Set(['java-core', 'oop', 'spring-crm', 'spring-boot', 'testing']);
 }
 
 function renderTopicOption(topic, checked) {
