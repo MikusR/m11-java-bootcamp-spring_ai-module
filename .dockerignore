@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+.vscode
+target
+*.db
+*.db-journal
+*.sqlite
+.env

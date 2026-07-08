@@ -1,14 +1,22 @@
-version: '3.8'
-
 services:
   app:
-    # Coolify will auto-build your Java code using Railpack/Nixpacks if you specify context
     build:
       context: .
+      dockerfile: Dockerfile
     ports:
       - "8080"
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - SPRING_AI_MODEL_AUDIO_SPEECH=none
+      - SPRING_AI_MODEL_AUDIO_TRANSCRIPTION=none
+      - SPRING_AI_MODEL_CHAT=ollama
+      - SPRING_AI_MODEL_EMBEDDING=none
+      - SPRING_AI_MODEL_IMAGE=none
+      - SPRING_AI_MODEL_MODERATION=none
+      - SPRING_AI_OLLAMA_BASE_URL=http://ollama:11434
+      - CHATBOT_AI_PROVIDER=ollama
+      - SQLITE_DB_PATH=/data/chatbot.db
+    volumes:
+      - app_data:/data
     depends_on:
       - ollama
 
@@ -16,8 +24,8 @@ services:
     image: ollama/ollama:latest
     volumes:
       - ollama_data:/root/.ollama
-    # Auto-pull desired model on start
     entrypoint: ["/usr/bin/bash", "-c", "ollama serve & sleep 5 && ollama pull gemma3:270m && tail -f /dev/null"]
 
 volumes:
+  app_data:
   ollama_data:
