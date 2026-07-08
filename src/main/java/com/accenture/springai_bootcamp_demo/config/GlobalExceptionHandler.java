@@ -3,6 +3,8 @@ package com.accenture.springai_bootcamp_demo.config;
 import com.accenture.springai_bootcamp_demo.client.OllamaException;
 import com.accenture.springai_bootcamp_demo.client.OpenRouterException;
 import com.accenture.springai_bootcamp_demo.service.ChatNotFoundException;
+import com.accenture.springai_bootcamp_demo.service.learning.LearningTopicNotFoundException;
+import com.accenture.springai_bootcamp_demo.service.learning.LearningWorkflowException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -21,6 +23,11 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(LearningTopicNotFoundException.class)
+    public ProblemDetail handleLearningTopicNotFound(LearningTopicNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         String detail = ex.getBindingResult().getFieldErrors().stream()
@@ -36,6 +43,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OllamaException.class)
     public ProblemDetail handleOllama(OllamaException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
+
+    @ExceptionHandler(LearningWorkflowException.class)
+    public ProblemDetail handleLearningWorkflow(LearningWorkflowException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 }

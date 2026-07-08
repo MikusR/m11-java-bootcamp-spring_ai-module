@@ -21,11 +21,14 @@
             font-family: "Segoe UI", system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
-            height: 100vh;
-            display: flex;
+            min-height: 100vh;
+        }
+        .app-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
         }
         aside {
-            width: 280px;
             background: var(--panel);
             display: flex;
             flex-direction: column;
@@ -36,6 +39,28 @@
             font-weight: 600;
             font-size: 18px;
             border-bottom: 1px solid #0b1120;
+        }
+        .mode-nav {
+            display: grid;
+            gap: 6px;
+            padding: 12px;
+            border-bottom: 1px solid #0b1120;
+        }
+        .mode-nav button {
+            width: 100%;
+            padding: 10px 12px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            text-align: left;
+            cursor: pointer;
+            font: inherit;
+        }
+        .mode-nav button:hover,
+        .mode-nav button.active {
+            background: var(--panel-2);
+            color: var(--text);
         }
         #new-chat {
             margin: 12px;
@@ -76,8 +101,22 @@
             font-size: 14px;
         }
         .chat-item .del:hover { color: #f87171; }
-        main { flex: 1; display: flex; flex-direction: column; }
-        main header {
+        .workspace {
+            min-width: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .view {
+            min-height: 100vh;
+            display: none;
+            flex-direction: column;
+        }
+        .view.active {
+            display: flex;
+        }
+        main header,
+        .learning-panel header {
             padding: 16px 20px;
             border-bottom: 1px solid var(--panel);
             font-weight: 600;
@@ -90,10 +129,51 @@
             flex-direction: column;
             gap: 14px;
         }
-        .msg { max-width: 70%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; white-space: pre-wrap; }
+        .msg { max-width: 70%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; }
         .msg.user { align-self: flex-end; background: var(--user); }
         .msg.assistant { align-self: flex-start; background: var(--assistant); }
         .msg .role { font-size: 11px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+        .formatted {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+        .formatted p,
+        .formatted ul,
+        .formatted ol,
+        .formatted pre {
+            margin: 0 0 10px;
+        }
+        .formatted p:last-child,
+        .formatted ul:last-child,
+        .formatted ol:last-child,
+        .formatted pre:last-child {
+            margin-bottom: 0;
+        }
+        .formatted ul,
+        .formatted ol {
+            padding-left: 20px;
+        }
+        .formatted li {
+            margin-bottom: 4px;
+        }
+        .formatted .formatted-heading {
+            margin: 12px 0 6px;
+            font-weight: 700;
+        }
+        .formatted .formatted-heading:first-child {
+            margin-top: 0;
+        }
+        .formatted pre {
+            padding: 10px;
+            border-radius: 8px;
+            background: #020617;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .formatted code {
+            font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+            font-size: 13px;
+        }
         .empty { color: var(--muted); margin: auto; text-align: center; }
         form {
             display: flex;
@@ -122,23 +202,288 @@
         }
         #send:disabled { opacity: 0.5; cursor: default; }
         #error { color: #f87171; padding: 0 20px 10px; min-height: 18px; font-size: 13px; }
+        .learning-panel {
+            background: #111827;
+        }
+        .learning-body {
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+        #learning-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .field label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+        .field textarea,
+        .field input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-2);
+            background: #111827;
+            color: var(--text);
+            font: inherit;
+        }
+        .topic-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .topic-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .topic-toolbar label {
+            margin: 0;
+        }
+        #auto-select-topics {
+            padding: 6px 10px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: #0f766e;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        #auto-select-topics:hover { background: #0d9488; }
+        #auto-select-topics:disabled { opacity: 0.5; cursor: default; }
+        .topic-option {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            padding: 8px;
+            border-radius: 8px;
+            background: #111827;
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.35;
+        }
+        .topic-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .topic-summary {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .topic-option input { margin-top: 2px; }
+        #diagnose {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 8px;
+            background: #14b8a6;
+            color: #042f2e;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        #diagnose:disabled { opacity: 0.5; cursor: default; }
+        #learning-error { color: #f87171; min-height: 18px; font-size: 13px; }
+        #learning-results {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .learning-output {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+        .article-library {
+            padding: 16px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+        .article-library h2 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+        .article-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .article-card {
+            padding: 12px;
+            border-radius: 8px;
+            background: #111827;
+            border: 1px solid transparent;
+        }
+        .article-card.selected {
+            border-color: #14b8a6;
+        }
+        .article-card h3 {
+            margin: 0 0 6px;
+            font-size: 14px;
+        }
+        .article-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .article-card details {
+            margin-top: 10px;
+        }
+        .article-card summary {
+            color: #67e8f9;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .article-body {
+            margin-top: 8px;
+            white-space: pre-line;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .result-block {
+            padding: 14px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+        .result-block h3 {
+            margin: 0 0 8px;
+            font-size: 13px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+        .result-block p,
+        .result-block li {
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        .result-block ul,
+        .result-block ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .context-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .context-pill {
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: var(--panel-2);
+            color: var(--text);
+            font-size: 12px;
+        }
+        @media (max-width: 1100px) {
+            .app-shell {
+                grid-template-columns: 240px minmax(0, 1fr);
+            }
+            .learning-body {
+                grid-template-columns: 1fr;
+            }
+            .article-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 720px) {
+            .app-shell {
+                display: flex;
+                flex-direction: column;
+            }
+            aside {
+                min-height: 220px;
+            }
+            main {
+                min-height: 520px;
+            }
+            .msg {
+                max-width: 92%;
+            }
+            .topic-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-<aside>
-    <header>💬 Chats</header>
-    <button id="new-chat">+ New chat</button>
-    <div id="chat-list"></div>
-</aside>
-<main>
-    <header id="chat-title">Select or start a chat</header>
-    <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
-    <div id="error"></div>
-    <form id="composer">
-        <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
-        <button id="send" type="submit" disabled>Send</button>
-    </form>
-</main>
+<div class="app-shell">
+    <aside>
+        <header>Chats</header>
+        <nav class="mode-nav" aria-label="Workspace">
+            <button class="active" type="button" data-view="chat-view">Chat</button>
+            <button type="button" data-view="learning-view">Learning Path</button>
+        </nav>
+        <button id="new-chat">+ New chat</button>
+        <div id="chat-list"></div>
+    </aside>
+    <div class="workspace">
+        <main id="chat-view" class="view active">
+            <header id="chat-title">Select or start a chat</header>
+            <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
+            <div id="error"></div>
+            <form id="composer">
+                <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
+                <button id="send" type="submit" disabled>Send</button>
+            </form>
+        </main>
+        <section id="learning-view" class="learning-panel view" aria-labelledby="learning-title">
+            <header id="learning-title">Learning Path Doctor</header>
+            <div class="learning-body">
+                <form id="learning-form">
+                    <div class="field">
+                        <label for="learner-goal">Learner goal</label>
+                        <textarea id="learner-goal" rows="3" maxlength="1000" required>I want to build a Spring AI chatbot confidently.</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="learner-struggles">Current struggles</label>
+                        <textarea id="learner-struggles" rows="4" maxlength="3000" required>I understand controllers but get confused about services, DTOs, and AI prompts.</textarea>
+                    </div>
+                    <div class="field">
+                        <div class="topic-toolbar">
+                            <label>Topics</label>
+                            <button id="auto-select-topics" type="button">Auto-select from prompt</button>
+                        </div>
+                        <div id="learning-topics" class="topic-grid"></div>
+                    </div>
+                    <div class="field">
+                        <label for="time-available">Time available</label>
+                        <input id="time-available" type="number" min="15" max="240" value="45" required>
+                    </div>
+                    <button id="diagnose" type="submit">Diagnose</button>
+                    <div id="learning-error"></div>
+                </form>
+                <div class="learning-output">
+                    <div id="learning-results"></div>
+                    <section class="article-library" aria-labelledby="articles-title">
+                        <h2 id="articles-title">Knowledge Articles</h2>
+                        <div id="knowledge-articles" class="article-grid"></div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
 <script src="/app.js?v=chatMessages"></script>
 </body>
 </html>
