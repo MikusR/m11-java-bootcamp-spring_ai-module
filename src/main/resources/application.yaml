@@ -16,9 +16,11 @@ spring:
       base-url: http://localhost:11434
       chat:
         model: gemma3:270m
-    openrouter:
-      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+    openai:
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
       api-key: ${OPENROUTER_API_KEY:}
-      model: ${OPENROUTER_MODEL:tencent/hy3:free}
-      temperature: ${OPENROUTER_TEMPERATURE:0.9}
-      max-completion-tokens: ${OPENROUTER_MAX_COMPLETION_TOKENS:1024}
+      chat:
+        options:
+          model: ${OPENROUTER_MODEL:tencent/hy3:free}
+          temperature: ${OPENROUTER_TEMPERATURE:0.9}
+          max-tokens: ${OPENROUTER_MAX_COMPLETION_TOKENS:1024}
