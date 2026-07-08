@@ -13,13 +13,7 @@ spring:
     open-in-view: false
   ai:
     model:
-      audio:
-        speech: none
-        transcription: none
       chat: ollama
-      embedding: none
-      image: none
-      moderation: none
     ollama:
       base-url: http://localhost:11434
       chat:
