@@ -32,6 +32,13 @@ public class Chat {
     @Column(nullable = false)
     private String title;
 
+    @Column
+    private String provider;
+
+    public String getProvider() {
+        return provider == null || provider.isBlank() ? "ollama" : provider;
+    }
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -42,11 +49,12 @@ public class Chat {
     @OrderBy("createdAt ASC")
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
-    public static Chat create(String title) {
+    public static Chat create(String title, String provider) {
         Chat chat = new Chat();
         Instant now = Instant.now();
         chat.id = UUID.randomUUID().toString();
         chat.title = title;
+        chat.provider = (provider == null || provider.isBlank()) ? "ollama" : provider.toLowerCase();
         chat.createdAt = now;
         chat.updatedAt = now;
         return chat;

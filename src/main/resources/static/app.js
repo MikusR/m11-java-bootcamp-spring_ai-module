@@ -1,6 +1,10 @@
 const api = {
     list: () => fetch('/api/chats').then(r => r.json()),
-    create: () => fetch('/api/chats', { method: 'POST' }).then(r => r.json()),
+    create: (provider) => fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider })
+    }).then(r => r.json()),
     get: (id) => fetch(`/api/chats/${id}`).then(r => r.json()),
     remove: (id) => fetch(`/api/chats/${id}`, { method: 'DELETE' }),
     send: (id, content) => fetch(`/api/chats/${id}/chatMessages`, {
@@ -24,7 +28,9 @@ const els = {
     send: document.getElementById('send'),
     form: document.getElementById('composer'),
     error: document.getElementById('error'),
-    newChat: document.getElementById('new-chat')
+    newChat: document.getElementById('new-chat'),
+    newChatProvider: document.getElementById('new-chat-provider'),
+    providerBadge: document.getElementById('provider-badge')
 };
 
 let activeChatId = null;
@@ -36,6 +42,9 @@ function setError(message) {
 function setComposerEnabled(enabled) {
     els.input.disabled = !enabled;
     els.send.disabled = !enabled;
+    if (!enabled) {
+        els.providerBadge.style.display = 'none';
+    }
 }
 
 async function refreshChatList() {
@@ -53,6 +62,11 @@ function renderChatItem(chat) {
     title.className = 'title';
     title.textContent = chat.title;
 
+    const badge = document.createElement('span');
+    const prov = chat.provider || 'ollama';
+    badge.className = `list-badge ${prov.toLowerCase()}`;
+    badge.textContent = prov === 'openrouter' ? 'OpenRouter' : 'Ollama';
+
     const count = document.createElement('span');
     count.className = 'count';
     count.textContent = chat.messageCount;
@@ -62,13 +76,19 @@ function renderChatItem(chat) {
     del.textContent = '🗑';
     del.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); };
 
-    item.append(title, count, del);
+    item.append(title, badge, count, del);
     return item;
 }
 
 function renderMessages(chat) {
     els.title.textContent = chat.title;
     els.messages.innerHTML = '';
+    
+    const prov = chat.provider || 'ollama';
+    els.providerBadge.className = prov.toLowerCase();
+    els.providerBadge.textContent = prov === 'openrouter' ? 'OpenRouter' : 'Ollama';
+    els.providerBadge.style.display = 'inline-flex';
+
     if (!chat.chatMessages.length) {
         els.messages.innerHTML = '<div class="empty">Say hello to start the conversation.</div>';
         return;
@@ -101,7 +121,8 @@ async function openChat(id) {
 
 async function startNewChat() {
     setError('');
-    const chat = await api.create();
+    const provider = els.newChatProvider.value;
+    const chat = await api.create(provider);
     await refreshChatList();
     await openChat(chat.id);
 }
