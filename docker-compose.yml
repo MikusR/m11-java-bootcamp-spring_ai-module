@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  app:
+    # Coolify will auto-build your Java code using Railpack/Nixpacks if you specify context
+    build:
+      context: .
+    ports:
+      - "8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    # Auto-pull desired model on start
+    entrypoint: ["/usr/bin/bash", "-c", "ollama serve & sleep 5 && ollama pull gemma3:270m && tail -f /dev/null"]
+
+volumes:
+  ollama_data:
