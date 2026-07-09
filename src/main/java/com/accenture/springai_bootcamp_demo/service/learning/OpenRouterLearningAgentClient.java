@@ -126,7 +126,7 @@ public class OpenRouterLearningAgentClient implements LearningAgentClient {
                     .content();
             if (!StringUtils.hasText(content)) {
                 throw new LearningWorkflowException("OpenRouter returned an empty learning workflow response. "
-                        + "Use a non-reasoning OpenRouter model such as openrouter/auto, or set OPENROUTER_MODEL explicitly.", null);
+                        + "Use a free non-reasoning OpenRouter model ending with ':free', or set OPENROUTER_MODEL explicitly.", null);
             }
             return content.trim();
         } catch (LearningWorkflowException ex) {
