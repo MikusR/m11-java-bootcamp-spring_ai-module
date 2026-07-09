@@ -11,6 +11,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
@@ -25,6 +26,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * Fallback Spring AI OpenAI-compatible model wiring for OpenRouter.
  */
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties({OpenAiConnectionProperties.class, OpenAiChatProperties.class})
 public class OpenRouterSpringAiConfig {
 
     @Bean
