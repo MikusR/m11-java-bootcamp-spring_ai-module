@@ -12,15 +12,15 @@ spring:
         dialect: org.hibernate.community.dialect.SQLiteDialect
     open-in-view: false
   ai:
-    model:
-      audio:
-        speech: none
-        transcription: none
-      chat: ollama
-      embedding: none
-      image: none
-      moderation: none
     ollama:
       base-url: http://localhost:11434
       chat:
         model: gemma3:270m
+    openai:
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
+      api-key: ${OPENROUTER_API_KEY:not-configured}
+      chat:
+        options:
+          model: ${OPENROUTER_MODEL:tencent/hy3:free}
+          temperature: ${OPENROUTER_TEMPERATURE:0.9}
+          max-tokens: ${OPENROUTER_MAX_COMPLETION_TOKENS:1024}

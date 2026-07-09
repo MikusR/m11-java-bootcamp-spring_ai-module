@@ -30,7 +30,8 @@ class LearningPathServiceTest {
                 "I want to build a Spring AI chatbot confidently.",
                 "I understand controllers but get confused about services, DTOs, and AI prompts.",
                 List.of("java-core", "spring-boot", "spring-ai"),
-                45);
+                45,
+                null);
 
         LearningDiagnosisResponse response = service.diagnose(request);
 
@@ -48,13 +49,33 @@ class LearningPathServiceTest {
     }
 
     @Test
+    void diagnoseUsesOpenRouterClientWhenRequested() {
+        FakeLearningAgentClient ollamaClient = new FakeLearningAgentClient();
+        FakeLearningAgentClient openRouterClient = new FakeLearningAgentClient();
+        LearningPathService providerAwareService =
+                new LearningPathService(knowledgeBase, ollamaClient, openRouterClient);
+        LearningDiagnosisRequest request = new LearningDiagnosisRequest(
+                "I want to build a Spring AI chatbot confidently.",
+                "I understand controllers but get confused about services, DTOs, and AI prompts.",
+                List.of("java-core", "spring-boot", "spring-ai"),
+                45,
+                "openrouter");
+
+        providerAwareService.diagnose(request);
+
+        assertThat(ollamaClient.calls).isEmpty();
+        assertThat(openRouterClient.calls).containsExactly("diagnostician", "exerciseDesigner", "coach");
+    }
+
+    @Test
     void diagnoseReplacesGenericModelOutputAndPlaceholderExercises() {
         LearningPathService crmService = new LearningPathService(knowledgeBase, new GenericLearningAgentClient());
         LearningDiagnosisRequest request = new LearningDiagnosisRequest(
                 "I want to build a Spring CRM.",
                 "I understand controllers but get confused about services, DTOs.",
                 List.of("spring-boot", "java-core", "validation"),
-                45);
+                45,
+                null);
 
         LearningDiagnosisResponse response = crmService.diagnose(request);
 
@@ -80,7 +101,8 @@ class LearningPathServiceTest {
                 "I want to build a Spring CRM.",
                 "I understand controllers but get confused about services, DTOs.",
                 List.of("spring-crm", "spring-boot", "java-core"),
-                45);
+                45,
+                null);
 
         LearningDiagnosisResponse response = crmService.diagnose(request);
 

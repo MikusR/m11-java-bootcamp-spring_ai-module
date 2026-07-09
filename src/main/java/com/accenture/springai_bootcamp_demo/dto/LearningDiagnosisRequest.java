@@ -27,5 +27,7 @@ public record LearningDiagnosisRequest(
         @NotNull(message = "timeAvailableMinutes is required")
         @Min(value = 15, message = "timeAvailableMinutes must be at least 15")
         @Max(value = 240, message = "timeAvailableMinutes must not exceed 240")
-        Integer timeAvailableMinutes) {
+        Integer timeAvailableMinutes,
+
+        String provider) {
 }

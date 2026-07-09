@@ -10,5 +10,6 @@ public record ChatSummaryDto(
         String title,
         Instant createdAt,
         Instant updatedAt,
+        String provider,
         int messageCount) {
 }

@@ -62,8 +62,22 @@
             background: var(--panel-2);
             color: var(--text);
         }
+        #new-chat-provider {
+            margin: 12px 12px 0;
+            padding: 10px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: var(--panel-2);
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+        }
+        #new-chat-provider:focus {
+            border-color: var(--accent);
+        }
         #new-chat {
-            margin: 12px;
+            margin: 8px 12px 12px;
             padding: 10px;
             border: none;
             border-radius: 8px;
@@ -93,6 +107,21 @@
             flex: 1;
         }
         .chat-item .count { color: var(--muted); font-size: 12px; }
+        .list-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            color: white;
+            white-space: nowrap;
+        }
+        .list-badge.ollama {
+            background: #4f46e5;
+        }
+        .list-badge.openrouter {
+            background: #059669;
+        }
         .chat-item .del {
             border: none;
             background: transparent;
@@ -201,6 +230,25 @@
             cursor: pointer;
         }
         #send:disabled { opacity: 0.5; cursor: default; }
+        #provider-badge {
+            display: none;
+            align-items: center;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+            white-space: nowrap;
+        }
+        #provider-badge.ollama {
+            display: inline-flex;
+            background: #4f46e5;
+        }
+        #provider-badge.openrouter {
+            display: inline-flex;
+            background: #059669;
+        }
         #error { color: #f87171; padding: 0 20px 10px; min-height: 18px; font-size: 13px; }
         .learning-panel {
             background: #111827;
@@ -234,7 +282,8 @@
             letter-spacing: 0;
         }
         .field textarea,
-        .field input {
+        .field input,
+        .field select {
             width: 100%;
             padding: 10px;
             border-radius: 8px;
@@ -434,6 +483,10 @@
             <button class="active" type="button" data-view="chat-view">Chat</button>
             <button type="button" data-view="learning-view">Learning Path</button>
         </nav>
+        <select id="new-chat-provider" aria-label="New chat provider">
+            <option value="ollama">Ollama (Local)</option>
+            <option value="openrouter">OpenRouter (Remote)</option>
+        </select>
         <button id="new-chat">+ New chat</button>
         <div id="chat-list"></div>
     </aside>
@@ -443,6 +496,7 @@
             <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
             <div id="error"></div>
             <form id="composer">
+                <span id="provider-badge"></span>
                 <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
                 <button id="send" type="submit" disabled>Send</button>
             </form>
@@ -469,6 +523,13 @@
                     <div class="field">
                         <label for="time-available">Time available</label>
                         <input id="time-available" type="number" min="15" max="240" value="45" required>
+                    </div>
+                    <div class="field">
+                        <label for="learning-provider">Provider</label>
+                        <select id="learning-provider">
+                            <option value="ollama">Ollama (Local)</option>
+                            <option value="openrouter">OpenRouter (Remote)</option>
+                        </select>
                     </div>
                     <button id="diagnose" type="submit">Diagnose</button>
                     <div id="learning-error"></div>

@@ -11,5 +11,6 @@ public record ChatDto(
         String title,
         Instant createdAt,
         Instant updatedAt,
+        String provider,
         List<ChatMessageDto> chatMessages) {
 }

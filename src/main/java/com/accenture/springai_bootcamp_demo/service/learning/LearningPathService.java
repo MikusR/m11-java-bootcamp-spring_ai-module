@@ -15,6 +15,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,14 +29,27 @@ public class LearningPathService {
     private static final Pattern DURATION_PATTERN = Pattern.compile("(\\d{1,3})");
 
     private final LearningKnowledgeBase learningKnowledgeBase;
-    private final LearningAgentClient learningAgentClient;
+    private final LearningAgentClient ollamaLearningAgentClient;
+    private final LearningAgentClient openRouterLearningAgentClient;
 
+    @Autowired
     public LearningPathService(
+            LearningKnowledgeBase learningKnowledgeBase,
+            @Qualifier("ollamaLearningAgentClient") LearningAgentClient ollamaLearningAgentClient,
+            @Qualifier("openRouterLearningAgentClient") LearningAgentClient openRouterLearningAgentClient
+    ) {
+        this.learningKnowledgeBase = learningKnowledgeBase;
+        this.ollamaLearningAgentClient = ollamaLearningAgentClient;
+        this.openRouterLearningAgentClient = openRouterLearningAgentClient;
+    }
+
+    LearningPathService(
             LearningKnowledgeBase learningKnowledgeBase,
             LearningAgentClient learningAgentClient
     ) {
         this.learningKnowledgeBase = learningKnowledgeBase;
-        this.learningAgentClient = learningAgentClient;
+        this.ollamaLearningAgentClient = learningAgentClient;
+        this.openRouterLearningAgentClient = learningAgentClient;
     }
 
     public List<LearningTopicDto> listTopics() {
@@ -48,6 +63,7 @@ public class LearningPathService {
         String retrievalQuery = buildRetrievalQuery(request, selectedTopics);
         List<LearningKnowledgeBase.RetrievedLearningContext> context =
                 learningKnowledgeBase.retrieve(request.topics(), retrievalQuery);
+        LearningAgentClient learningAgentClient = learningAgentClient(request.provider());
 
         String diagnosisText = learningAgentClient.runDiagnostician(
                 request.learnerGoal(),
@@ -70,6 +86,12 @@ public class LearningPathService {
                 practicePlan,
                 coachMessage,
                 agentTrace());
+    }
+
+    private LearningAgentClient learningAgentClient(String provider) {
+        return "openrouter".equalsIgnoreCase(provider)
+                ? openRouterLearningAgentClient
+                : ollamaLearningAgentClient;
     }
 
     private String buildRetrievalQuery(
