@@ -21,6 +21,5 @@ spring:
       api-key: ${OPENROUTER_API_KEY:not-configured}
       chat:
         options:
-          model: ${OPENROUTER_MODEL:tencent/hy3:free}
+          model: ${OPENROUTER_MODEL:nvidia/nemotron-3-nano-30b-a3b:free}
           temperature: ${OPENROUTER_TEMPERATURE:0.9}
-          max-tokens: ${OPENROUTER_MAX_COMPLETION_TOKENS:1024}

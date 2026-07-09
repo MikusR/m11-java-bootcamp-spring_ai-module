@@ -95,5 +95,8 @@ public class OpenRouterClient {
                 || !StringUtils.hasText(openAiChatProperties.getOptions().getModel())) {
             throw new OpenRouterException("OpenRouter model is not configured");
         }
+        if (!openAiChatProperties.getOptions().getModel().endsWith(":free")) {
+            throw new OpenRouterException("OpenRouter model must be a free model ending with ':free'");
+        }
     }
 }

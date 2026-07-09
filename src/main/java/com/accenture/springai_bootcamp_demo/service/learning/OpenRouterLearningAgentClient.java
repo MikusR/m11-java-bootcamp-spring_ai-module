@@ -22,7 +22,8 @@ public class OpenRouterLearningAgentClient implements LearningAgentClient {
 
     private static final String MISSING_API_KEY = "not-configured";
     private static final String SOURCE_BOUNDARY =
-            "Use only the learner input and retrieved module guidance. Do not invent course content outside that context.";
+            "Use only the learner input and retrieved module guidance. Do not invent course content outside that context. "
+                    + "Return the final answer in normal message content only; do not return only reasoning or hidden analysis.";
 
     private final ChatClient chatClient;
     private final OpenAiChatProperties openAiChatProperties;
@@ -124,7 +125,8 @@ public class OpenRouterLearningAgentClient implements LearningAgentClient {
                     .call()
                     .content();
             if (!StringUtils.hasText(content)) {
-                throw new LearningWorkflowException("OpenRouter returned an empty learning workflow response", null);
+                throw new LearningWorkflowException("OpenRouter returned an empty learning workflow response. "
+                        + "Use a non-reasoning OpenRouter model such as openrouter/auto, or set OPENROUTER_MODEL explicitly.", null);
             }
             return content.trim();
         } catch (LearningWorkflowException ex) {
@@ -162,6 +164,9 @@ public class OpenRouterLearningAgentClient implements LearningAgentClient {
         if (openAiChatProperties.getOptions() == null
                 || !StringUtils.hasText(openAiChatProperties.getOptions().getModel())) {
             throw new LearningWorkflowException("OpenRouter model is not configured", null);
+        }
+        if (!openAiChatProperties.getOptions().getModel().endsWith(":free")) {
+            throw new LearningWorkflowException("OpenRouter model must be a free model ending with ':free'", null);
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.accenture.springai_bootcamp_demo.service.learning;
 
 import java.util.List;
+import java.net.URI;
+import java.net.Socket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -21,6 +23,7 @@ public class OllamaLearningAgentClient implements LearningAgentClient {
 
     private static final String SOURCE_BOUNDARY =
             "Use only the learner input and retrieved module guidance. Do not invent course content outside that context.";
+    private static final int CONNECT_TIMEOUT_MILLIS = 500;
 
     private final ChatClient chatClient;
     private final OllamaChatProperties ollamaChatProperties;
@@ -115,6 +118,7 @@ public class OllamaLearningAgentClient implements LearningAgentClient {
 
     private String call(String systemPrompt, String userPrompt) {
         requireOllamaConfig();
+        requireOllamaReachable();
         try {
             String content = chatClient.prompt()
                     .messages(List.<Message>of(new SystemMessage(systemPrompt), new UserMessage(userPrompt)))
@@ -155,6 +159,23 @@ public class OllamaLearningAgentClient implements LearningAgentClient {
         }
         if (!StringUtils.hasText(ollamaChatProperties.getModel())) {
             throw new LearningWorkflowException("Ollama chat model is not configured", null);
+        }
+    }
+
+    private void requireOllamaReachable() {
+        URI uri = URI.create(ollamaConnectionProperties.getBaseUrl());
+        int port = uri.getPort();
+        if (port == -1) {
+            port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+        }
+        try (Socket socket = new Socket()) {
+            socket.connect(new java.net.InetSocketAddress(uri.getHost(), port), CONNECT_TIMEOUT_MILLIS);
+        } catch (RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new LearningWorkflowException("Ollama is not running at "
+                    + ollamaConnectionProperties.getBaseUrl()
+                    + ". Start Ollama or choose OpenRouter for the Learning Path provider.", ex);
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.accenture.springai_bootcamp_demo.client;
 
 import com.accenture.springai_bootcamp_demo.entity.ChatMessage;
+import java.net.URI;
+import java.net.Socket;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,6 +24,8 @@ import org.springframework.util.StringUtils;
 @Slf4j
 @Component
 public class OllamaClient {
+    private static final int CONNECT_TIMEOUT_MILLIS = 500;
+
     private final ChatClient chatClient;
     private final OllamaChatProperties ollamaChatProperties;
     private final OllamaConnectionProperties ollamaConnectionProperties;
@@ -38,6 +42,7 @@ public class OllamaClient {
 
     public String complete(List<ChatMessage> history) {
         requireOllamaConfig();
+        requireOllamaReachable();
         String reply = call(history);
         return extractContent(reply);
     }
@@ -53,7 +58,11 @@ public class OllamaClient {
             throw ex;
         } catch (RuntimeException ex) {
             log.error("Ollama request failed", ex);
-            throw new OllamaException("Failed to reach Ollama: " + ex.getMessage(), ex);
+            throw new OllamaException("Ollama request failed. Confirm Ollama is running at "
+                    + ollamaConnectionProperties.getBaseUrl()
+                    + " and model "
+                    + ollamaChatProperties.getModel()
+                    + " is available.", ex);
         }
     }
 
@@ -88,6 +97,23 @@ public class OllamaClient {
         }
         if (!StringUtils.hasText(ollamaChatProperties.getModel())) {
             throw new OllamaException("Ollama chat model is not configured");
+        }
+    }
+
+    private void requireOllamaReachable() {
+        URI uri = URI.create(ollamaConnectionProperties.getBaseUrl());
+        int port = uri.getPort();
+        if (port == -1) {
+            port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+        }
+        try (Socket socket = new Socket()) {
+            socket.connect(new java.net.InetSocketAddress(uri.getHost(), port), CONNECT_TIMEOUT_MILLIS);
+        } catch (RuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new OllamaException("Ollama is not running at "
+                    + ollamaConnectionProperties.getBaseUrl()
+                    + ". Start Ollama or create/select an OpenRouter chat.", ex);
         }
     }
 }

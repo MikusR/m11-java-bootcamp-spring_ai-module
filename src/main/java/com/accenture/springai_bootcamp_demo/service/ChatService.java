@@ -60,14 +60,17 @@ public class ChatService {
     }
 
     /**
-     * Persists the user message, asks the configured model for a reply, stores
-     * it and returns the refreshed conversation.
+     * Persists the user message before calling the configured model, then
+     * stores the assistant reply. The model call intentionally runs outside a
+     * database transaction so a slow or unavailable provider cannot keep
+     * SQLite locked.
      */
-    @Transactional
     public ChatDto sendMessage(String chatId, SendMessageRequest request) {
         Chat chat = loadChat(chatId);
 
         recordUserMessage(chat, request.content());
+        chatRepository.save(chat);
+
         String reply;
         if ("openrouter".equalsIgnoreCase(chat.getProvider())) {
             reply = openRouterClient.complete(chat.getChatMessages());
