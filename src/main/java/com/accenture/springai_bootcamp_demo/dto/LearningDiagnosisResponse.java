@@ -10,5 +10,6 @@ public record LearningDiagnosisResponse(
         List<RetrievedLearningContextDto> retrievedContext,
         PracticePlanDto practicePlan,
         String coachMessage,
-        List<AgentTraceDto> agentTrace) {
+        List<AgentTraceDto> agentTrace,
+        List<LearningAgentExchangeDto> agentExchanges) {
 }

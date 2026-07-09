@@ -46,6 +46,12 @@ class LearningPathServiceTest {
         assertThat(response.agentTrace())
                 .extracting("agent")
                 .containsExactly("DIAGNOSTICIAN", "EXERCISE_DESIGNER", "COACH");
+        assertThat(response.agentExchanges())
+                .extracting("agent")
+                .containsExactly("DIAGNOSTICIAN", "EXERCISE_DESIGNER", "COACH");
+        assertThat(response.agentExchanges().getFirst().systemPrompt()).contains("learning diagnostician");
+        assertThat(response.agentExchanges().getFirst().userPrompt()).contains("Learner goal:");
+        assertThat(response.agentExchanges().getFirst().response()).contains("SUMMARY:");
     }
 
     @Test
@@ -121,36 +127,24 @@ class LearningPathServiceTest {
         private final List<String> calls = new ArrayList<>();
 
         @Override
-        public String runDiagnostician(
-                String learnerGoal,
-                String struggles,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context
-        ) {
-            calls.add("diagnostician");
-            return """
-                    SUMMARY: The learner needs to connect API structure with AI orchestration.
-                    WEAK_SPOTS:
-                    - Mapping controller requests into service workflows
-                    - Understanding prompt context and fake model tests
-                    CONFIDENCE: 68
-                    """;
-        }
-
-        @Override
-        public String runExerciseDesigner(
-                String diagnosis,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context,
-                int timeAvailableMinutes
-        ) {
-            calls.add("exerciseDesigner");
-            return """
-                    - Trace the request flow | 15 | Follow a POST request from controller to service to agent client.
-                    - Write a fake-agent test | 30 | Replace the AI boundary and assert the orchestration order.
-                    """;
-        }
-
-        @Override
-        public String runCoach(String diagnosis, String practicePlan) {
+        public String complete(String systemPrompt, String userPrompt) {
+            if (systemPrompt.contains("learning diagnostician")) {
+                calls.add("diagnostician");
+                return """
+                        SUMMARY: The learner needs to connect API structure with AI orchestration.
+                        WEAK_SPOTS:
+                        - Mapping controller requests into service workflows
+                        - Understanding prompt context and fake model tests
+                        CONFIDENCE: 68
+                        """;
+            }
+            if (systemPrompt.contains("exercise designer")) {
+                calls.add("exerciseDesigner");
+                return """
+                        - Trace the request flow | 15 | Follow a POST request from controller to service to agent client.
+                        - Write a fake-agent test | 30 | Replace the AI boundary and assert the orchestration order.
+                        """;
+            }
             calls.add("coach");
             return "Trace one request, then test the workflow with a fake model client.";
         }
@@ -159,34 +153,22 @@ class LearningPathServiceTest {
     private static class GenericLearningAgentClient implements LearningAgentClient {
 
         @Override
-        public String runDiagnostician(
-                String learnerGoal,
-                String struggles,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context
-        ) {
-            return """
-                    SUMMARY: A Spring MVC application needs to handle asynchronous operations, manage request/response lifecycle, and ensure data consistency.
-                    WEAK_SPOTS:
-                    - Lack of proper API design and error handling.
-                    - Inadequate logging and monitoring.
-                    CONFIDENCE: 100
-                    """;
-        }
-
-        @Override
-        public String runExerciseDesigner(
-                String diagnosis,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context,
-                int timeAvailableMinutes
-        ) {
-            return """
-                    - title | 10 | concrete instructions
-                    - duration | 15 | no concrete instructions
-                    """;
-        }
-
-        @Override
-        public String runCoach(String diagnosis, String practicePlan) {
+        public String complete(String systemPrompt, String userPrompt) {
+            if (systemPrompt.contains("learning diagnostician")) {
+                return """
+                        SUMMARY: A Spring MVC application needs to handle asynchronous operations, manage request/response lifecycle, and ensure data consistency.
+                        WEAK_SPOTS:
+                        - Lack of proper API design and error handling.
+                        - Inadequate logging and monitoring.
+                        CONFIDENCE: 100
+                        """;
+            }
+            if (systemPrompt.contains("exercise designer")) {
+                return """
+                        - title | 10 | concrete instructions
+                        - duration | 15 | no concrete instructions
+                        """;
+            }
             return "Use the generated practice plan.";
         }
     }
@@ -194,25 +176,13 @@ class LearningPathServiceTest {
     private static class AcknowledgementLearningAgentClient implements LearningAgentClient {
 
         @Override
-        public String runDiagnostician(
-                String learnerGoal,
-                String struggles,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context
-        ) {
-            return "Okay, I understand. I will analyze your learner input and retrieved module guidance based on the criteria outlined above. Let's begin!";
-        }
-
-        @Override
-        public String runExerciseDesigner(
-                String diagnosis,
-                List<LearningKnowledgeBase.RetrievedLearningContext> context,
-                int timeAvailableMinutes
-        ) {
-            return "- title | 10 | concrete instructions";
-        }
-
-        @Override
-        public String runCoach(String diagnosis, String practicePlan) {
+        public String complete(String systemPrompt, String userPrompt) {
+            if (systemPrompt.contains("learning diagnostician")) {
+                return "Okay, I understand. I will analyze your learner input and retrieved module guidance based on the criteria outlined above. Let's begin!";
+            }
+            if (systemPrompt.contains("exercise designer")) {
+                return "- title | 10 | concrete instructions";
+            }
             return "Okay, let's start! I understand the diagnostic process.";
         }
     }

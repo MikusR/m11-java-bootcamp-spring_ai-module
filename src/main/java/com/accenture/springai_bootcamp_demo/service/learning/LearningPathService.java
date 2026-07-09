@@ -1,6 +1,7 @@
 package com.accenture.springai_bootcamp_demo.service.learning;
 
 import com.accenture.springai_bootcamp_demo.dto.AgentTraceDto;
+import com.accenture.springai_bootcamp_demo.dto.LearningAgentExchangeDto;
 import com.accenture.springai_bootcamp_demo.dto.LearningDiagnosisDto;
 import com.accenture.springai_bootcamp_demo.dto.LearningDiagnosisRequest;
 import com.accenture.springai_bootcamp_demo.dto.LearningDiagnosisResponse;
@@ -27,6 +28,9 @@ public class LearningPathService {
 
     private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("(?i)confidence\\s*:?\\s*(\\d{1,3})");
     private static final Pattern DURATION_PATTERN = Pattern.compile("(\\d{1,3})");
+    private static final String SOURCE_BOUNDARY =
+            "Use only the learner input and retrieved module guidance. Do not invent course content outside that context. "
+                    + "Return the final answer in normal message content only; do not return only reasoning or hidden analysis.";
 
     private final LearningKnowledgeBase learningKnowledgeBase;
     private final LearningAgentClient ollamaLearningAgentClient;
@@ -64,20 +68,18 @@ public class LearningPathService {
         List<LearningKnowledgeBase.RetrievedLearningContext> context =
                 learningKnowledgeBase.retrieve(request.topics(), retrievalQuery);
         LearningAgentClient learningAgentClient = learningAgentClient(request.provider());
+        List<LearningAgentExchangeDto> agentExchanges = new ArrayList<>();
 
-        String diagnosisText = learningAgentClient.runDiagnostician(
-                request.learnerGoal(),
-                request.struggles(),
-                context);
+        PromptPair diagnosticianPrompt = diagnosticianPrompt(request, context);
+        String diagnosisText = callAgent("DIAGNOSTICIAN", diagnosticianPrompt, learningAgentClient, agentExchanges);
         LearningDiagnosisDto diagnosis = parseDiagnosis(diagnosisText, request, context);
 
-        String exerciseText = learningAgentClient.runExerciseDesigner(
-                formatDiagnosis(diagnosis),
-                context,
-                request.timeAvailableMinutes());
+        PromptPair exerciseDesignerPrompt = exerciseDesignerPrompt(diagnosis, context, request.timeAvailableMinutes());
+        String exerciseText = callAgent("EXERCISE_DESIGNER", exerciseDesignerPrompt, learningAgentClient, agentExchanges);
         PracticePlanDto practicePlan = parsePracticePlan(exerciseText, request, diagnosis, context);
 
-        String coachMessage = learningAgentClient.runCoach(formatDiagnosis(diagnosis), formatPracticePlan(practicePlan));
+        PromptPair coachPrompt = coachPrompt(diagnosis, practicePlan);
+        String coachMessage = callAgent("COACH", coachPrompt, learningAgentClient, agentExchanges);
         coachMessage = sanitizeCoachMessage(coachMessage, diagnosis, practicePlan);
 
         return new LearningDiagnosisResponse(
@@ -85,7 +87,92 @@ public class LearningPathService {
                 toContextDtos(context),
                 practicePlan,
                 coachMessage,
-                agentTrace());
+                agentTrace(),
+                agentExchanges);
+    }
+
+    private String callAgent(
+            String agent,
+            PromptPair prompt,
+            LearningAgentClient learningAgentClient,
+            List<LearningAgentExchangeDto> agentExchanges
+    ) {
+        String response = learningAgentClient.complete(prompt.systemPrompt(), prompt.userPrompt());
+        agentExchanges.add(new LearningAgentExchangeDto(agent, prompt.systemPrompt(), prompt.userPrompt(), response));
+        return response;
+    }
+
+    private PromptPair diagnosticianPrompt(
+            LearningDiagnosisRequest request,
+            List<LearningKnowledgeBase.RetrievedLearningContext> context
+    ) {
+        return new PromptPair(
+                "You are a bootcamp learning diagnostician. Identify the learner's likely weak spots using only the learner input and retrieved module guidance. Be specific, practical, and concise. "
+                        + SOURCE_BOUNDARY,
+                """
+                        Return this exact plain-text structure:
+                        SUMMARY: one concise sentence
+                        WEAK_SPOTS:
+                        - weak spot one
+                        - weak spot two
+                        CONFIDENCE: integer from 0 to 100
+
+                        Rules:
+                        - Mention the learner's actual terms when relevant, such as controllers, services, DTOs, CRM, Spring.
+                        - Do not mention async, logging, monitoring, data consistency, or testing unless the learner input or retrieved guidance explicitly asks for it.
+                        - Keep confidence below 90 unless the learner provided detailed evidence.
+
+                        Learner goal:
+                        %s
+
+                        Current struggles:
+                        %s
+
+                        Retrieved module guidance:
+                        %s
+                        """.formatted(request.learnerGoal(), request.struggles(), formatContext(context)));
+    }
+
+    private PromptPair exerciseDesignerPrompt(
+            LearningDiagnosisDto diagnosis,
+            List<LearningKnowledgeBase.RetrievedLearningContext> context,
+            int timeAvailableMinutes
+    ) {
+        return new PromptPair(
+                "You are a bootcamp exercise designer. Create practice steps that fit the available time. Each step must have a title, duration in minutes, and concrete instructions. "
+                        + SOURCE_BOUNDARY,
+                """
+                        Return only practice steps in this exact format, one per line:
+                        - specific exercise title | number only | concrete instructions
+
+                        Rules:
+                        - Do not output the words "title", "duration", or "concrete instructions" as placeholder values.
+                        - Each instruction must mention a concrete Spring, controller, service, DTO, validation, test, or repository action.
+                        - Produce 3 to 4 steps total.
+
+                        Available time: %d minutes
+
+                        Diagnosis:
+                        %s
+
+                        Retrieved module guidance:
+                        %s
+                        """.formatted(timeAvailableMinutes, formatDiagnosis(diagnosis), formatContext(context)));
+    }
+
+    private PromptPair coachPrompt(LearningDiagnosisDto diagnosis, PracticePlanDto practicePlan) {
+        return new PromptPair(
+                "You are a direct but supportive learning coach. Summarize the diagnosis and practice plan in plain language. Avoid vague encouragement. "
+                        + SOURCE_BOUNDARY,
+                """
+                        Write one short paragraph for the learner.
+
+                        Diagnosis:
+                        %s
+
+                        Practice plan:
+                        %s
+                        """.formatted(formatDiagnosis(diagnosis), formatPracticePlan(practicePlan)));
     }
 
     private LearningAgentClient learningAgentClient(String provider) {
@@ -372,6 +459,18 @@ public class LearningPathService {
                 .reduce("", (left, right) -> left + " " + right);
     }
 
+    private String formatContext(List<LearningKnowledgeBase.RetrievedLearningContext> context) {
+        StringBuilder builder = new StringBuilder();
+        for (LearningKnowledgeBase.RetrievedLearningContext item : context) {
+            builder.append("- ")
+                    .append(item.title())
+                    .append(": ")
+                    .append(item.guidance())
+                    .append(System.lineSeparator());
+        }
+        return builder.toString();
+    }
+
     private String formatPracticePlan(PracticePlanDto practicePlan) {
         StringBuilder builder = new StringBuilder();
         builder.append("Time box: ").append(practicePlan.timeBoxMinutes()).append(" minutes").append(System.lineSeparator());
@@ -405,5 +504,8 @@ public class LearningPathService {
                 new AgentTraceDto("EXERCISE_DESIGNER", "Create targeted exercises from diagnosis and time budget."),
                 new AgentTraceDto("COACH", "Turn the plan into concise learner-facing advice.")
         );
+    }
+
+    private record PromptPair(String systemPrompt, String userPrompt) {
     }
 }

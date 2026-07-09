@@ -44,7 +44,7 @@ const els = {
     form: document.getElementById('composer'),
     error: document.getElementById('error'),
     newChat: document.getElementById('new-chat'),
-    newChatProvider: document.getElementById('new-chat-provider'),
+    composerProvider: document.getElementById('composer-provider'),
     providerBadge: document.getElementById('provider-badge'),
     learningForm: document.getElementById('learning-form'),
     learnerGoal: document.getElementById('learner-goal'),
@@ -57,12 +57,14 @@ const els = {
     diagnose: document.getElementById('diagnose'),
     learningError: document.getElementById('learning-error'),
     learningResults: document.getElementById('learning-results'),
+    learningDebug: document.getElementById('learning-debug'),
     viewButtons: document.querySelectorAll('.mode-nav button'),
     views: document.querySelectorAll('.view')
 };
 
 let activeChatId = null;
 let learningTopics = [];
+let latestLearningDebug = null;
 const ignoredPromptTokens = new Set([
     'about', 'build', 'but', 'confused', 'get', 'have', 'into', 'learn', 'make',
     'need', 'the', 'this', 'want', 'with', 'work', 'understand'
@@ -78,9 +80,6 @@ function setError(message) {
 function setComposerEnabled(enabled) {
     els.input.disabled = !enabled;
     els.send.disabled = !enabled;
-    if (!enabled) {
-        els.providerBadge.style.display = 'none';
-    }
 }
 
 async function refreshChatList() {
@@ -121,6 +120,8 @@ function renderMessages(chat) {
     els.messages.innerHTML = '';
 
     const prov = chat.provider || 'ollama';
+    els.composerProvider.value = prov;
+    els.composerProvider.disabled = true;
     els.providerBadge.className = prov.toLowerCase();
     els.providerBadge.textContent = prov === 'openrouter' ? 'OpenRouter' : 'Ollama';
     els.providerBadge.style.display = 'inline-flex';
@@ -148,6 +149,7 @@ function renderMessage(message) {
 
 async function openChat(id) {
     setError('');
+    showView('chat-view');
     activeChatId = id;
     const chat = await api.get(id);
     renderMessages(chat);
@@ -158,9 +160,15 @@ async function openChat(id) {
 
 async function startNewChat() {
     setError('');
-    const chat = await api.create(els.newChatProvider.value);
+    activeChatId = null;
+    els.title.textContent = 'New chat';
+    els.messages.innerHTML = '<div class="empty">Choose a provider, type a message, and send to start.</div>';
+    els.providerBadge.style.display = 'none';
+    els.composerProvider.disabled = false;
+    setComposerEnabled(true);
+    showView('chat-view');
     await refreshChatList();
-    await openChat(chat.id);
+    els.input.focus();
 }
 
 async function deleteChat(id) {
@@ -170,7 +178,10 @@ async function deleteChat(id) {
         activeChatId = null;
         els.title.textContent = 'Select or start a chat';
         els.messages.innerHTML = '<div class="empty">No conversation selected.</div>';
-        setComposerEnabled(false);
+        els.providerBadge.style.display = 'none';
+        els.composerProvider.disabled = false;
+        setComposerEnabled(true);
+        els.input.focus();
     }
     await refreshChatList();
 }
@@ -178,8 +189,12 @@ async function deleteChat(id) {
 async function submitMessage(content) {
     setError('');
     setComposerEnabled(false);
-    appendPending(content);
     try {
+        if (!activeChatId) {
+            const chat = await api.create(els.composerProvider.value);
+            activeChatId = chat.id;
+        }
+        appendPending(content);
         const chat = await api.send(activeChatId, content);
         renderMessages(chat);
         await refreshChatList();
@@ -374,20 +389,101 @@ async function submitLearningDiagnosis() {
     els.learningResults.innerHTML = '<div class="empty">Running the diagnostic workflow...</div>';
     setLearningEnabled(false);
     try {
-        const response = await learningApi.diagnose({
+        const payload = {
             learnerGoal: els.learnerGoal.value.trim(),
             struggles: els.learnerStruggles.value.trim(),
             topics: selectedLearningTopics(),
             timeAvailableMinutes: Number(els.timeAvailable.value),
             provider: els.learningProvider.value
-        });
+        };
+        const response = await learningApi.diagnose(payload);
+        latestLearningDebug = { request: payload, response };
         renderLearningResults(response);
+        renderLearningDebug(latestLearningDebug);
     } catch (err) {
         setLearningError(err.message);
         els.learningResults.innerHTML = '';
     } finally {
         setLearningEnabled(true);
     }
+}
+
+function renderLearningDebug(debug) {
+    els.learningDebug.innerHTML = '';
+    if (!debug) {
+        els.learningDebug.innerHTML = '<div class="empty">Run a Learning Path diagnosis to inspect debug data.</div>';
+        return;
+    }
+    els.learningDebug.append(
+        renderDebugJson('Request', debug.request),
+        renderDebugJson('Full response', debug.response),
+        renderAgentExchanges(debug.response.agentExchanges || []),
+        renderContextDebug(debug.response.retrievedContext || []),
+        renderTraceBlock(debug.response.agentTrace || [])
+    );
+}
+
+function renderDebugJson(title, value) {
+    const block = createResultBlock(title);
+    const pre = document.createElement('pre');
+    pre.className = 'debug-json';
+    pre.textContent = JSON.stringify(value, null, 2);
+    block.appendChild(pre);
+    return block;
+}
+
+function renderAgentExchanges(exchanges) {
+    const block = createResultBlock('Agent prompt exchanges');
+    if (!exchanges.length) {
+        block.appendChild(document.createTextNode('No agent prompt exchanges available.'));
+        return block;
+    }
+    exchanges.forEach(exchange => {
+        const details = document.createElement('details');
+        details.open = true;
+        const summary = document.createElement('summary');
+        summary.textContent = exchange.agent || 'Agent';
+        details.appendChild(summary);
+        details.append(
+            renderPromptSection('System prompt', exchange.systemPrompt || ''),
+            renderPromptSection('User prompt', exchange.userPrompt || ''),
+            renderPromptSection('Response', exchange.response || '')
+        );
+        block.appendChild(details);
+    });
+    return block;
+}
+
+function renderPromptSection(title, value) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'prompt-debug-section';
+    const heading = document.createElement('div');
+    heading.className = 'prompt-debug-title';
+    heading.textContent = title;
+    const pre = document.createElement('pre');
+    pre.className = 'debug-json';
+    pre.textContent = value || '(empty)';
+    wrapper.append(heading, pre);
+    return wrapper;
+}
+
+function renderContextDebug(context) {
+    const block = createResultBlock('Retrieved context details');
+    if (!context.length) {
+        block.appendChild(document.createTextNode('No retrieved context available.'));
+        return block;
+    }
+    context.forEach(item => {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = `${item.title} (${(item.matchedKeywords || []).join(', ') || 'no keyword matches'})`;
+        const body = document.createElement('div');
+        body.className = 'formatted';
+        body.appendChild(formatText(item.guidance || ''));
+        details.append(summary, body);
+        block.appendChild(details);
+    });
+    return block;
 }
 
 function renderLearningResults(response) {
@@ -658,6 +754,9 @@ function showView(viewId) {
     els.viewButtons.forEach(button => {
         button.classList.toggle('active', button.dataset.view === viewId);
     });
+    if (viewId === 'chat-view') {
+        els.input.focus();
+    }
 }
 
 els.newChat.onclick = startNewChat;
@@ -690,3 +789,4 @@ els.input.addEventListener('keydown', (e) => {
 
 refreshChatList();
 loadLearningTopics();
+startNewChat();

@@ -25,8 +25,8 @@
         }
         .app-shell {
             min-height: 100vh;
-            display: grid;
-            grid-template-columns: 280px minmax(0, 1fr);
+            display: flex;
+            flex-direction: column;
         }
         aside {
             background: var(--panel);
@@ -41,43 +41,43 @@
             border-bottom: 1px solid #0b1120;
         }
         .mode-nav {
-            display: grid;
-            gap: 6px;
-            padding: 12px;
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
             border-bottom: 1px solid #0b1120;
+            background: #111827;
         }
         .mode-nav button {
-            width: 100%;
-            padding: 10px 12px;
+            padding: 8px 12px;
             border: 0;
             border-radius: 8px;
             background: transparent;
             color: var(--muted);
-            text-align: left;
             cursor: pointer;
             font: inherit;
+            white-space: nowrap;
         }
         .mode-nav button:hover,
         .mode-nav button.active {
             background: var(--panel-2);
             color: var(--text);
         }
-        #new-chat-provider {
-            margin: 12px 12px 0;
+        #composer-provider {
+            width: 150px;
             padding: 10px;
             border: 1px solid var(--panel-2);
             border-radius: 8px;
-            background: var(--panel-2);
+            background: var(--panel);
             color: var(--text);
             font-size: 14px;
             cursor: pointer;
             outline: none;
         }
-        #new-chat-provider:focus {
+        #composer-provider:focus {
             border-color: var(--accent);
         }
         #new-chat {
-            margin: 8px 12px 12px;
+            margin: 12px;
             padding: 10px;
             border: none;
             border-radius: 8px;
@@ -137,12 +137,23 @@
             flex-direction: column;
         }
         .view {
-            min-height: 100vh;
+            flex: 1;
+            min-height: 0;
             display: none;
             flex-direction: column;
         }
         .view.active {
             display: flex;
+        }
+        #chat-view.active {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+        }
+        .chat-panel {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
         main header,
         .learning-panel header {
@@ -251,6 +262,9 @@
         }
         #error { color: #f87171; padding: 0 20px 10px; min-height: 18px; font-size: 13px; }
         .learning-panel {
+            background: #111827;
+        }
+        .debug-panel {
             background: #111827;
         }
         .learning-body {
@@ -444,8 +458,37 @@
             color: var(--text);
             font-size: 12px;
         }
+        #learning-debug {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .debug-json {
+            padding: 14px;
+            border: 1px solid var(--panel-2);
+            border-radius: 8px;
+            background: #020617;
+            color: var(--text);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font: 13px "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+        }
+        .prompt-debug-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .prompt-debug-title {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
         @media (max-width: 1100px) {
-            .app-shell {
+            #chat-view.active {
                 grid-template-columns: 240px minmax(0, 1fr);
             }
             .learning-body {
@@ -456,7 +499,10 @@
             }
         }
         @media (max-width: 720px) {
-            .app-shell {
+            .mode-nav {
+                overflow-x: auto;
+            }
+            #chat-view.active {
                 display: flex;
                 flex-direction: column;
             }
@@ -477,29 +523,32 @@
 </head>
 <body>
 <div class="app-shell">
-    <aside>
-        <header>Chats</header>
+    <div class="workspace">
         <nav class="mode-nav" aria-label="Workspace">
             <button class="active" type="button" data-view="chat-view">Chat</button>
             <button type="button" data-view="learning-view">Learning Path</button>
+            <button type="button" data-view="learning-debug-view">Learning Debug</button>
         </nav>
-        <select id="new-chat-provider" aria-label="New chat provider">
-            <option value="ollama">Ollama (Local)</option>
-            <option value="openrouter">OpenRouter (Remote)</option>
-        </select>
-        <button id="new-chat">+ New chat</button>
-        <div id="chat-list"></div>
-    </aside>
-    <div class="workspace">
         <main id="chat-view" class="view active">
-            <header id="chat-title">Select or start a chat</header>
-            <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
-            <div id="error"></div>
-            <form id="composer">
-                <span id="provider-badge"></span>
-                <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
-                <button id="send" type="submit" disabled>Send</button>
-            </form>
+            <aside>
+                <header>Chats</header>
+                <button id="new-chat">+ New chat</button>
+                <div id="chat-list"></div>
+            </aside>
+            <div class="chat-panel">
+                <header id="chat-title">Select or start a chat</header>
+                <div id="chatMessages"><div class="empty">No conversation selected.</div></div>
+                <div id="error"></div>
+                <form id="composer">
+                    <span id="provider-badge"></span>
+                    <select id="composer-provider" aria-label="Chat provider">
+                        <option value="ollama">Ollama</option>
+                        <option value="openrouter">OpenRouter</option>
+                    </select>
+                    <textarea id="input" rows="2" placeholder="Type a chatMessage and press Enter..." disabled></textarea>
+                    <button id="send" type="submit" disabled>Send</button>
+                </form>
+            </div>
         </main>
         <section id="learning-view" class="learning-panel view" aria-labelledby="learning-title">
             <header id="learning-title">Learning Path Doctor</header>
@@ -542,6 +591,10 @@
                     </section>
                 </div>
             </div>
+        </section>
+        <section id="learning-debug-view" class="debug-panel view" aria-labelledby="learning-debug-title">
+            <header id="learning-debug-title">Learning Path Debug</header>
+            <div id="learning-debug"><div class="empty">Run a Learning Path diagnosis to inspect debug data.</div></div>
         </section>
     </div>
 </div>

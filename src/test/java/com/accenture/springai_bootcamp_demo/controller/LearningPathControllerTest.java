@@ -85,7 +85,8 @@ class LearningPathControllerTest {
                 List.of(new RetrievedLearningContextDto("spring-ai", "Spring AI", List.of("prompt"), "Guidance")),
                 new PracticePlanDto(45, List.of(new PracticeStepDto("Trace flow", 15, "Read controller and service"))),
                 "Practice one vertical slice.",
-                List.of(new AgentTraceDto("DIAGNOSTICIAN", "Identify weak spots"))));
+                List.of(new AgentTraceDto("DIAGNOSTICIAN", "Identify weak spots")),
+                List.of()));
 
         mockMvc.perform(post("/api/learning-path/diagnose")
                         .contentType(MediaType.APPLICATION_JSON)
